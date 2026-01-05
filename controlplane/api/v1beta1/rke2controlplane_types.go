@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
 )
@@ -596,6 +596,18 @@ func (r *RKE2ControlPlane) GetConditions() clusterv1.Conditions {
 
 // SetConditions sets the list of conditions for a RKE2ControlPlane object.
 func (r *RKE2ControlPlane) SetConditions(conditions clusterv1.Conditions) {
+	r.Status.Conditions = conditions
+}
+
+// GetV1Beta1Conditions returns the list of conditions for a RKE2ControlPlane object.
+// This is required by the deprecated v1beta1 conditions package.
+func (r *RKE2ControlPlane) GetV1Beta1Conditions() clusterv1.Conditions {
+	return r.Status.Conditions
+}
+
+// SetV1Beta1Conditions sets the list of conditions for a RKE2ControlPlane object.
+// This is required by the deprecated v1beta1 conditions package.
+func (r *RKE2ControlPlane) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	r.Status.Conditions = conditions
 }
 

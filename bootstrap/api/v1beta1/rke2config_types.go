@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // Format specifies the output format of the bootstrap data
@@ -250,6 +250,18 @@ func (r *RKE2Config) GetConditions() clusterv1.Conditions {
 
 // SetConditions sets the conditions for a RKE2Config.
 func (r *RKE2Config) SetConditions(conditions clusterv1.Conditions) {
+	r.Status.Conditions = conditions
+}
+
+// GetV1Beta1Conditions returns the list of conditions for a RKE2Config.
+// This is required by the deprecated v1beta1 conditions package.
+func (r *RKE2Config) GetV1Beta1Conditions() clusterv1.Conditions {
+	return r.Status.Conditions
+}
+
+// SetV1Beta1Conditions sets the conditions for a RKE2Config.
+// This is required by the deprecated v1beta1 conditions package.
+func (r *RKE2Config) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	r.Status.Conditions = conditions
 }
 

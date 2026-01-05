@@ -23,9 +23,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	klog "k8s.io/klog/v2" //nolint: gci
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	"sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime" //nolint: gci
 	"sigs.k8s.io/controller-runtime/pkg/client"
 

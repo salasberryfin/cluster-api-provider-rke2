@@ -34,11 +34,11 @@ import (
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/collections"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	controlplanev1 "github.com/rancher/cluster-api-provider-rke2/controlplane/api/v1beta1"
@@ -207,7 +207,7 @@ func (w *Workload) PatchNodes(ctx context.Context, cp *ControlPlane) error {
 
 		if !found {
 			for _, m := range cp.Machines {
-				if m.Status.NodeRef != nil && m.Status.NodeRef.Name == node.Name {
+				if m.Status.NodeRef.IsDefined() && m.Status.NodeRef.Name == node.Name {
 					machine = m
 
 					break
@@ -271,7 +271,7 @@ func (w *Workload) ClusterStatus(ctx context.Context) ClusterStatus {
 
 func hasProvisioningMachine(machines collections.Machines) bool {
 	for _, machine := range machines {
-		if machine.Status.NodeRef == nil {
+		if !machine.Status.NodeRef.IsDefined() {
 			return true
 		}
 	}
@@ -315,7 +315,7 @@ func (w *Workload) UpdateAgentConditions(controlPlane *ControlPlane) {
 			}
 
 			for _, m := range controlPlane.Machines {
-				if m.Status.NodeRef != nil && m.Status.NodeRef.Name == node.Name {
+				if m.Status.NodeRef.IsDefined() && m.Status.NodeRef.Name == node.Name {
 					machine = m
 
 					break
@@ -353,7 +353,7 @@ func (w *Workload) UpdateAgentConditions(controlPlane *ControlPlane) {
 	// If there are provisioned machines without corresponding nodes, report this as a failing conditions with SeverityError.
 	for i := range controlPlane.Machines {
 		machine := controlPlane.Machines[i]
-		if machine.Status.NodeRef == nil {
+		if !machine.Status.NodeRef.IsDefined() {
 			continue
 		}
 
@@ -389,11 +389,11 @@ func (w *Workload) UpdateAgentConditions(controlPlane *ControlPlane) {
 // it is referenced from machine object.
 func (w *Workload) UpdateNodeMetadata(ctx context.Context, controlPlane *ControlPlane) error {
 	for nodeName, machine := range controlPlane.Machines {
-		if machine.Spec.Bootstrap.ConfigRef == nil {
+		if !machine.Spec.Bootstrap.ConfigRef.IsDefined() {
 			continue
 		}
 
-		if machine.Status.NodeRef != nil {
+		if machine.Status.NodeRef.IsDefined() {
 			nodeName = machine.Status.NodeRef.Name
 		}
 
@@ -437,7 +437,7 @@ func (w *Workload) UpdateNodeMetadata(ctx context.Context, controlPlane *Control
 // ApplyLabelOnNode applies a label key and value to the Node associated to the Machine, if any.
 func (w *Workload) ApplyLabelOnNode(ctx context.Context, machine *clusterv1.Machine, key, value string) error {
 	logger := log.FromContext(ctx)
-	if machine == nil || machine.Status.NodeRef == nil {
+	if machine == nil || !machine.Status.NodeRef.IsDefined() {
 		// Nothing to do, no node for Machine
 		logger.Info("Nothing to do, no node for Machine")
 
@@ -620,7 +620,7 @@ func (w *Workload) updateManagedEtcdConditions(controlPlane *ControlPlane) {
 			}
 
 			for _, m := range controlPlane.Machines {
-				if m.Status.NodeRef != nil && m.Status.NodeRef.Name == node.Name {
+				if m.Status.NodeRef.IsDefined() && m.Status.NodeRef.Name == node.Name {
 					machine = m
 				}
 			}
