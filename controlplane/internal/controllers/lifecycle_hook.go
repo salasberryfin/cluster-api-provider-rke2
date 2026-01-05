@@ -25,7 +25,7 @@ import (
 	klog "k8s.io/klog/v2" //nolint: gci
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/collections"
-	"sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime" //nolint: gci
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -115,7 +115,7 @@ func (r *RKE2ControlPlaneReconciler) reconcilePreDrainHook(ctx context.Context, 
 	deletingMachine := getDeletingMachineWithHook(ctx,
 		controlPlane,
 		controlplanev1.PreDrainLoadbalancerExclusionAnnotation,
-		clusterv1.PreDrainDeleteHookSucceededCondition)
+		clusterv1.PreDrainDeleteHookSucceededV1Beta1Condition)
 	if deletingMachine == nil {
 		log.V(5).Info("Waiting on other machines to be deleted.")
 
@@ -171,7 +171,7 @@ func (r *RKE2ControlPlaneReconciler) reconcilePreTerminateHook(ctx context.Conte
 	deletingMachine := getDeletingMachineWithHook(ctx,
 		controlPlane,
 		controlplanev1.PreTerminateHookCleanupAnnotation,
-		clusterv1.PreTerminateDeleteHookSucceededCondition)
+		clusterv1.PreTerminateDeleteHookSucceededV1Beta1Condition)
 	if deletingMachine == nil {
 		log.V(5).Info("Waiting on other machines to be deleted.")
 
@@ -328,7 +328,7 @@ func getDeletingMachineWithHook(ctx context.Context,
 
 	// Return early because the Machine controller is not yet waiting for the hook.
 	c := conditions.Get(deletingMachine, succeededCondition)
-	if c == nil || c.Status != corev1.ConditionFalse || c.Reason != clusterv1.WaitingExternalHookReason {
+	if c == nil || c.Status != corev1.ConditionFalse || c.Reason != clusterv1.WaitingExternalHookV1Beta1Reason {
 		log.V(5).Info("Machine is not waiting on condition", "condition", succeededCondition, "machine", deletingMachine.Name)
 
 		return nil

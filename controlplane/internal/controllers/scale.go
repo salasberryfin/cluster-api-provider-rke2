@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api/controllers/external"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/collections"
-	"sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/cluster-api/util/labels/format"
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
@@ -303,7 +303,7 @@ func (r *RKE2ControlPlaneReconciler) cloneConfigsAndGenerateMachine(
 	cluster *clusterv1.Cluster,
 	rcp *controlplanev1.RKE2ControlPlane,
 	bootstrapSpec *bootstrapv1.RKE2ConfigSpec,
-	failureDomain *string,
+	failureDomain string,
 ) error {
 	var errs []error
 
@@ -449,7 +449,7 @@ func (r *RKE2ControlPlaneReconciler) createMachine(
 	rcp *controlplanev1.RKE2ControlPlane,
 	cluster *clusterv1.Cluster,
 	infraRef, bootstrapRef *corev1.ObjectReference,
-	failureDomain *string,
+	failureDomain string,
 ) error {
 	machine, err := r.computeDesiredMachine(rcp, cluster, infraRef, bootstrapRef, failureDomain, nil)
 	if err != nil {
@@ -507,13 +507,13 @@ func (r *RKE2ControlPlaneReconciler) computeDesiredMachine(
 	rcp *controlplanev1.RKE2ControlPlane,
 	cluster *clusterv1.Cluster, infraRef,
 	bootstrapRef *corev1.ObjectReference,
-	failureDomain *string,
+	failureDomain string,
 	existingMachine *clusterv1.Machine,
 ) (*clusterv1.Machine, error) {
 	var (
 		machineName string
 		machineUID  types.UID
-		version     *string
+		version     string
 	)
 
 	annotations := map[string]string{}
@@ -521,9 +521,7 @@ func (r *RKE2ControlPlaneReconciler) computeDesiredMachine(
 	if existingMachine == nil {
 		// Creating a new machine
 		machineName = names.SimpleNameGenerator.GenerateName(rcp.Name + "-")
-
-		desiredVersion := rcp.GetDesiredVersion()
-		version = &desiredVersion
+		version = rcp.GetDesiredVersion()
 
 		// Machine's bootstrap config may be missing RKE2Config if it is not the first machine in the control plane.
 		// We store RKE2Config as annotation here to detect any changes in RCP RKE2Config and rollout the machine if any.
@@ -566,12 +564,20 @@ func (r *RKE2ControlPlaneReconciler) computeDesiredMachine(
 			Annotations: map[string]string{},
 		},
 		Spec: clusterv1.MachineSpec{
-			ClusterName:       cluster.Name,
-			Version:           version,
-			FailureDomain:     failureDomain,
-			InfrastructureRef: *infraRef,
+			ClusterName:   cluster.Name,
+			Version:       version,
+			FailureDomain: failureDomain,
+			InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+				APIGroup: infraRef.GroupVersionKind().Group,
+				Kind:     infraRef.Kind,
+				Name:     infraRef.Name,
+			},
 			Bootstrap: clusterv1.Bootstrap{
-				ConfigRef: bootstrapRef,
+				ConfigRef: clusterv1.ContractVersionedObjectReference{
+					APIGroup: bootstrapRef.GroupVersionKind().Group,
+					Kind:     bootstrapRef.Kind,
+					Name:     bootstrapRef.Name,
+				},
 			},
 		},
 	}

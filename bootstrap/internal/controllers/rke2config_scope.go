@@ -146,12 +146,12 @@ func (s *Scope) HasControlPlaneOwner() bool {
 
 // GetDesiredVersion returns the K8S version associated to the RKE2Config owner.
 func (s *Scope) GetDesiredVersion() (string, error) {
-	if s.MachinePool != nil && s.MachinePool.Spec.Template.Spec.Version != nil {
-		return *s.MachinePool.Spec.Template.Spec.Version, nil
+	if s.MachinePool != nil && s.MachinePool.Spec.Template.Spec.Version != "" {
+		return s.MachinePool.Spec.Template.Spec.Version, nil
 	}
 
-	if s.Machine != nil && s.Machine.Spec.Version != nil {
-		return *s.Machine.Spec.Version, nil
+	if s.Machine != nil && s.Machine.Spec.Version != "" {
+		return s.Machine.Spec.Version, nil
 	}
 
 	return "", ErrVersionNotFound
