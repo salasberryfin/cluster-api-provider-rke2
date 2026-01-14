@@ -40,12 +40,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	kubeyaml "sigs.k8s.io/yaml"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterexpv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/feature"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta1"
@@ -141,7 +140,9 @@ func (r *RKE2ConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}()
 
-	if !scope.Cluster.Status.InfrastructureReady {
+	// Check if infrastructure is provisioned using the new v1beta2 Initialization struct
+	infraProvisioned := scope.Cluster.Status.Initialization.InfrastructureProvisioned != nil && *scope.Cluster.Status.Initialization.InfrastructureProvisioned
+	if !infraProvisioned {
 		logger.Info("Infrastructure machine not yet ready")
 		conditions.MarkFalse(
 			scope.Config,
@@ -176,8 +177,9 @@ func (r *RKE2ConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, nil
 	}
 
-	// Note: can't use IsFalse here because we need to handle the absence of the condition as well as false.
-	if !conditions.IsTrue(scope.Cluster, clusterv1.ControlPlaneInitializedCondition) {
+	// Note: Check if the control plane is initialized using the new Initialization struct
+	cpInitialized := scope.Cluster.Status.Initialization.ControlPlaneInitialized != nil && *scope.Cluster.Status.Initialization.ControlPlaneInitialized
+	if !cpInitialized {
 		return r.handleClusterNotInitialized(ctx, scope)
 	}
 
@@ -194,7 +196,7 @@ func (r *RKE2ConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	wkControlPlane := controlplanev1.RKE2ControlPlane{}
 
 	err = r.Get(ctx, types.NamespacedName{
-		Namespace: scope.Cluster.Spec.ControlPlaneRef.Namespace,
+		Namespace: scope.Cluster.Namespace,
 		Name:      scope.Cluster.Spec.ControlPlaneRef.Name,
 	}, &wkControlPlane)
 	if err != nil {
@@ -230,7 +232,7 @@ func (r *RKE2ConfigReconciler) SetupWithManager(mgr ctrl.Manager, concurrency in
 
 	if feature.Gates.Enabled(feature.MachinePool) {
 		builder = builder.Watches(
-			&clusterexpv1.MachinePool{},
+			&clusterv1.MachinePool{},
 			handler.EnqueueRequestsFromMapFunc(r.MachinePoolToBootstrapMapFunc),
 		)
 	}
@@ -248,7 +250,7 @@ func (r *RKE2ConfigReconciler) MachineToBootstrapMapFunc(_ context.Context, o cl
 
 	result := []ctrl.Request{}
 
-	if m.Spec.Bootstrap.ConfigRef != nil && m.Spec.Bootstrap.ConfigRef.GroupVersionKind() == bootstrapv1.GroupVersion.WithKind("RKE2Config") {
+	if m.Spec.Bootstrap.ConfigRef.IsDefined() && m.Spec.Bootstrap.ConfigRef.GroupKind() == bootstrapv1.GroupVersion.WithKind("RKE2Config").GroupKind() {
 		name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.Bootstrap.ConfigRef.Name}
 		result = append(result, ctrl.Request{NamespacedName: name})
 	}
@@ -259,7 +261,7 @@ func (r *RKE2ConfigReconciler) MachineToBootstrapMapFunc(_ context.Context, o cl
 // MachinePoolToBootstrapMapFunc is a handler.ToRequestsFunc to be used to enqueue
 // request for reconciliation of RKE2Config.
 func (r *RKE2ConfigReconciler) MachinePoolToBootstrapMapFunc(_ context.Context, o client.Object) []ctrl.Request {
-	m, ok := o.(*clusterexpv1.MachinePool)
+	m, ok := o.(*clusterv1.MachinePool)
 	if !ok {
 		panic(fmt.Sprintf("Expected a Machine but got a %T", o))
 	}
@@ -268,7 +270,7 @@ func (r *RKE2ConfigReconciler) MachinePoolToBootstrapMapFunc(_ context.Context, 
 
 	spec := m.Spec.Template.Spec
 
-	if spec.Bootstrap.ConfigRef != nil && spec.Bootstrap.ConfigRef.GroupVersionKind() == bootstrapv1.GroupVersion.WithKind("RKE2Config") {
+	if spec.Bootstrap.ConfigRef.IsDefined() && spec.Bootstrap.ConfigRef.GroupKind() == bootstrapv1.GroupVersion.WithKind("RKE2Config").GroupKind() {
 		name := client.ObjectKey{Namespace: m.Namespace, Name: m.Spec.Template.Spec.Bootstrap.ConfigRef.Name}
 		result = append(result, ctrl.Request{NamespacedName: name})
 	}
@@ -299,7 +301,7 @@ func (r *RKE2ConfigReconciler) ClusterToRKE2Configs(ctx context.Context, o clien
 	}
 
 	for _, machine := range machineList.Items {
-		if machine.Spec.Bootstrap.ConfigRef != nil {
+		if machine.Spec.Bootstrap.ConfigRef.IsDefined() {
 			if machine.Spec.Bootstrap.ConfigRef.Kind == "RKE2Config" {
 				result = append(result, ctrl.Request{NamespacedName: types.NamespacedName{
 					Namespace: machine.Namespace,
@@ -310,13 +312,13 @@ func (r *RKE2ConfigReconciler) ClusterToRKE2Configs(ctx context.Context, o clien
 	}
 
 	if feature.Gates.Enabled(feature.MachinePool) {
-		machinePoolList := &clusterexpv1.MachinePoolList{}
+		machinePoolList := &clusterv1.MachinePoolList{}
 		if err := r.List(ctx, machinePoolList, selectors...); err != nil {
 			return nil
 		}
 
 		for _, machinePool := range machinePoolList.Items {
-			if machinePool.Spec.Template.Spec.Bootstrap.ConfigRef != nil {
+			if machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.IsDefined() {
 				if machinePool.Spec.Template.Spec.Bootstrap.ConfigRef.Kind == "RKE2Config" {
 					result = append(result, ctrl.Request{NamespacedName: types.NamespacedName{
 						Namespace: machinePool.Namespace,

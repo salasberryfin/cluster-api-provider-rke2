@@ -42,14 +42,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/remote"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/certs"
 	"sigs.k8s.io/cluster-api/util/collections"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	capikubeconfig "sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/cluster-api/util/patch"
 
@@ -250,12 +250,12 @@ func patchRKE2ControlPlane(ctx context.Context, patchHelper *patch.Helper, rcp *
 	return patchHelper.Patch(
 		ctx,
 		rcp,
-		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
-			clusterv1.ReadyCondition,
-			controlplanev1.MachinesSpecUpToDateCondition,
-			controlplanev1.ResizedCondition,
-			controlplanev1.MachinesReadyCondition,
-			controlplanev1.AvailableCondition,
+		patch.WithOwnedConditions{Conditions: []string{
+			string(clusterv1.ReadyCondition),
+			string(controlplanev1.MachinesSpecUpToDateCondition),
+			string(controlplanev1.ResizedCondition),
+			string(controlplanev1.MachinesReadyCondition),
+			string(controlplanev1.AvailableCondition),
 		}},
 		patch.WithStatusObservedGeneration{},
 	)
@@ -351,8 +351,8 @@ func (r *RKE2ControlPlaneReconciler) ClusterToRKE2ControlPlane(ctx context.Conte
 		}
 
 		controlPlaneRef := c.Spec.ControlPlaneRef
-		if controlPlaneRef != nil && controlPlaneRef.Kind == "RKE2ControlPlane" {
-			return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: controlPlaneRef.Namespace, Name: controlPlaneRef.Name}}}
+		if controlPlaneRef.IsDefined() && controlPlaneRef.Kind == "RKE2ControlPlane" {
+			return []ctrl.Request{{NamespacedName: client.ObjectKey{Namespace: c.Namespace, Name: controlPlaneRef.Name}}}
 		}
 
 		return nil
@@ -528,8 +528,8 @@ func (r *RKE2ControlPlaneReconciler) updateStatus(ctx context.Context, rcp *cont
 	conditions.MarkTrue(rcp, controlplanev1.AvailableCondition)
 
 	lowestVersion := controlPlane.Machines.LowestVersion()
-	if lowestVersion != nil {
-		controlPlane.RCP.Status.Version = lowestVersion
+	if lowestVersion != "" {
+		controlPlane.RCP.Status.Version = &lowestVersion
 	}
 
 	// Surface lastRemediation data in status.
@@ -577,7 +577,7 @@ func (r *RKE2ControlPlaneReconciler) reconcileNormal(
 	logger.Info("Reconcile RKE2 Control Plane")
 
 	// Wait for the cluster infrastructure to be ready before creating machines
-	if !cluster.Status.InfrastructureReady {
+	if !cluster.Status.Initialization.InfrastructureProvisioned != nil && *cluster.Status.Initialization.InfrastructureProvisioned {
 		logger.Info("Cluster infrastructure is not ready yet")
 
 		return ctrl.Result{}, nil
@@ -1051,9 +1051,9 @@ func (r *RKE2ControlPlaneReconciler) syncMachines(ctx context.Context, controlPl
 			}
 
 			// Set all other in-place mutable fields that impact the ability to tear down existing machines.
-			m.Spec.NodeDrainTimeout = controlPlane.RCP.Spec.MachineTemplate.NodeDrainTimeout
-			m.Spec.NodeDeletionTimeout = controlPlane.RCP.Spec.MachineTemplate.NodeDeletionTimeout
-			m.Spec.NodeVolumeDetachTimeout = controlPlane.RCP.Spec.MachineTemplate.NodeVolumeDetachTimeout
+			m.Spec.Deletion.NodeDrainTimeoutSeconds = controlPlane.RCP.Spec.MachineTemplate.NodeDrainTimeout
+			m.Spec.Deletion.NodeDeletionTimeoutSeconds = controlPlane.RCP.Spec.MachineTemplate.NodeDeletionTimeout
+			m.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = controlPlane.RCP.Spec.MachineTemplate.NodeVolumeDetachTimeout
 
 			if err := patchHelper.Patch(ctx, m); err != nil {
 				return err
@@ -1121,7 +1121,7 @@ func (r *RKE2ControlPlaneReconciler) syncMachines(ctx context.Context, controlPl
 		// This could happen e.g. if the cache is not up-to-date yet.
 		if rke2ConfigFound {
 			// Note: Set the GroupVersionKind because updateExternalObject depends on it.
-			rke2Config.SetGroupVersionKind(m.Spec.Bootstrap.ConfigRef.GroupVersionKind())
+			rke2Config.SetGroupVersionKind(m.Spec.Bootstrap.ConfigRef.GroupKind())
 			// Cleanup managed fields of all RKE2Configs to drop ownership of labels and annotations
 			// from "manager". We do this so that RKE2Configs that are created using the Create method
 			// can also work with SSA. Otherwise, labels and annotations would be co-owned by our "old" "manager"
