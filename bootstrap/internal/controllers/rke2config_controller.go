@@ -824,6 +824,17 @@ func (r *RKE2ConfigReconciler) joinControlplane(ctx context.Context, scope *Scop
 		return ctrl.Result{}, err
 	}
 
+	// Set CertificatesAvailable condition for joining control plane nodes.
+	// Note: Joining servers don't generate new CA certificates - they retrieve existing
+	// cluster CA certificates during the RKE2 join process.
+	v1beta1conditions.MarkTrue(scope.Config, bootstrapv1.CertificatesAvailableV1Beta1Condition)
+	conditions.Set(scope.Config, metav1.Condition{
+		Type:    bootstrapv1.RKE2ConfigCertificatesAvailableCondition,
+		Status:  metav1.ConditionTrue,
+		Reason:  bootstrapv1.RKE2ConfigCertificatesAvailableReason,
+		Message: "Cluster CA certificates will be retrieved during join",
+	})
+
 	return ctrl.Result{}, nil
 }
 
@@ -943,6 +954,17 @@ func (r *RKE2ConfigReconciler) joinWorker(ctx context.Context, scope *Scope) (re
 	if err := r.storeBootstrapData(ctx, scope, userData); err != nil {
 		return ctrl.Result{}, err
 	}
+
+	// Set CertificatesAvailable condition for joining worker nodes.
+	// Note: Worker nodes (RKE2 agents) don't manage CA certificates - they only need
+	// the registration token to join the cluster. RKE2 handles agent certificates internally.
+	v1beta1conditions.MarkTrue(scope.Config, bootstrapv1.CertificatesAvailableV1Beta1Condition)
+	conditions.Set(scope.Config, metav1.Condition{
+		Type:    bootstrapv1.RKE2ConfigCertificatesAvailableCondition,
+		Status:  metav1.ConditionTrue,
+		Reason:  bootstrapv1.RKE2ConfigCertificatesAvailableReason,
+		Message: "CA certificates not required for worker nodes",
+	})
 
 	return ctrl.Result{}, nil
 }
