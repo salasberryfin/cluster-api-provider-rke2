@@ -106,16 +106,11 @@ kind: DockerCluster
 metadata:
   name: ${CLUSTER_NAME}
 spec:
-  failureDomains:
-    - name: fd1
-      controlPlane: true
-    - name: fd2
-      controlPlane: true
   loadBalancer:
     customHAProxyConfigTemplateRef:
       name: ${CLUSTER_NAME}-lb-config
 ---
-apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: RKE2ControlPlane
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -149,16 +144,14 @@ spec:
       extraArgs:
         - --anonymous-auth=true
   machineTemplate:
-    spec:
-      infrastructureRef:
-        apiGroup: infrastructure.cluster.x-k8s.io
-        kind: DockerMachineTemplate
-        name: "${CLUSTER_NAME}-control-plane"
-      deletion:
-        nodeDrainTimeoutSeconds: 30
     metadata:
       labels:
         key: value
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: DockerMachineTemplate
+      name: "${CLUSTER_NAME}-control-plane"
+    nodeDrainTimeout: 30s
   preRKE2Commands:
     - touch /pre-rke2-command.sentinel
   postRKE2Commands:
@@ -216,7 +209,6 @@ spec:
         apiGroup: infrastructure.cluster.x-k8s.io
         kind: DockerMachineTemplate
         name: ${CLUSTER_NAME}-md-0
-      failureDomain: fd1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: DockerMachineTemplate
@@ -230,7 +222,7 @@ spec:
       customImage: kindest/node:${KIND_IMAGE_VERSION}
       bootstrapTimeout: 15m
 ---
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: RKE2ConfigTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
