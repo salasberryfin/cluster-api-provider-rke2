@@ -23,6 +23,15 @@ import (
 	_ "embed"
 )
 
+const (
+	// these timeouts are used for setting control plane
+	// - `NodeDrainTimeoutSeconds`
+	// - `NodeDeletionTimeoutSeconds
+	// - `NodeVolumeDetachTimeoutSeconds`
+	timeout240s = 240
+	timeout480s = 480
+)
+
 var (
 	//go:embed data/infrastructure/clusterclass-template-docker.yaml
 	ClusterClassDocker []byte
@@ -32,4 +41,6 @@ var (
 	ClusterTemplateDockerExternalDatastore []byte
 	//go:embed data/infrastructure/postgres.yaml
 	Postgres []byte
+	//go:embed data/infrastructure/cluster-template-docker-v1beta1.yaml
+	ClusterTemplateDockerV1Beta1 []byte
 )
