@@ -1,0 +1,72 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+  # Read Machines and RKE2Configs to build the CanUpdateMachine/UpdateMachine responses.
+  - apiGroups:
+      - cluster.x-k8s.io
+    resources:
+      - machines
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - bootstrap.cluster.x-k8s.io
+    resources:
+      - rke2configs
+      - rke2configtemplates
+    verbs:
+      - get
+      - list
+      - watch
+  # Read and write machine-plan Secrets (Secret type rke.cattle.io/machine-plan)
+  # that the UpdateMachine handler populates for system-agent consumption.
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+  # Required by controller-runtime leader election.
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - events
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create

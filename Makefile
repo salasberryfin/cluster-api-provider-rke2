@@ -127,9 +127,11 @@ CONTROLLER_IMAGE_NAME := cluster-api-provider-rke2
 BOOTSTRAP_IMAGE_NAME := $(CONTROLLER_IMAGE_NAME)-bootstrap
 CONTROLPLANE_IMAGE_NAME = $(CONTROLLER_IMAGE_NAME)-controlplane
 TEST_EXTENSION_IMAGE_NAME := $(CONTROLLER_IMAGE_NAME)-test-extension
+EXTENSION_IMAGE_NAME := $(CONTROLLER_IMAGE_NAME)-extension
 BOOTSTRAP_IMG ?= $(REGISTRY)/$(ORG)/$(BOOTSTRAP_IMAGE_NAME)
 CONTROLPLANE_IMG ?= $(REGISTRY)/$(ORG)/$(CONTROLPLANE_IMAGE_NAME)
 TEST_EXTENSION_IMG ?= $(REGISTRY)/$(ORG)/$(TEST_EXTENSION_IMAGE_NAME)
+EXTENSION_IMG ?= $(REGISTRY)/$(ORG)/$(EXTENSION_IMAGE_NAME)
 IID_FILE ?= $(shell mktemp)
 LOCAL_IMAGES = $(shell pwd)/out/images
 
@@ -326,7 +328,8 @@ docker-pull-prerequisites:
 .PHONY: docker-build ## Build the docker images for all providers
 docker-build: buildx-machine docker-pull-prerequisites
 	$(MAKE) docker-build-rke2-bootstrap
-	$(MAKE) docker-build-rke2-control-plane 
+	$(MAKE) docker-build-rke2-control-plane
+	$(MAKE) docker-build-rke2-extension
 
 
 .PHONY: docker-build-rke2-bootstrap
@@ -364,6 +367,23 @@ docker-build-test-extension: buildx-machine docker-pull-prerequisites ## Build t
 			--build-arg ldflags="$(LDFLAGS)" . -t $(TEST_EXTENSION_IMG):$(TAG)
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(TEST_EXTENSION_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./test/extension/config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./test/extension/config/default/manager_pull_policy.yaml"
+
+.PHONY: docker-build-rke2-extension
+docker-build-rke2-extension: buildx-machine docker-pull-prerequisites ## Build the production Runtime Extension image (in-place updates)
+	DOCKER_BUILDKIT=1 BUILDX_BUILDER=$(MACHINE) docker buildx build \
+			--platform $(ARCH) \
+			--load \
+			--build-arg builder_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg goproxy=$(GOPROXY) \
+			--build-arg package=./cmd/extension \
+			--build-arg ldflags="$(LDFLAGS)" . -t $(EXTENSION_IMG):$(TAG)
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(EXTENSION_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="./cmd/extension/config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-pull-policy TARGET_RESOURCE="./cmd/extension/config/default/manager_pull_policy.yaml"
+
+.PHONY: deploy-extension
+deploy-extension: ## Deploy the extension server and ExtensionConfig to the current cluster (for local development)
+	kubectl apply -k cmd/extension/config/default/
+	kubectl apply -f cmd/extension/config/extensionconfig.yaml
 
 ## --------------------------------------
 ## Testing
@@ -509,6 +529,11 @@ release-manifests: $(RELEASE_DIR) $(KUSTOMIZE) ## Build the manifests to publish
 	# Build control-plane-components.
 	$(KUSTOMIZE) build controlplane/config/default > $(RELEASE_DIR)/control-plane-components.yaml
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(CONTROLPLANE_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="$(RELEASE_DIR)/control-plane-components.yaml"
+	# Build extension-components (server deployment + RBAC + certs + ExtensionConfig).
+	$(KUSTOMIZE) build cmd/extension/config/default > $(RELEASE_DIR)/extension-components.yaml
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(EXTENSION_IMG) MANIFEST_TAG=$(TAG) TARGET_RESOURCE="$(RELEASE_DIR)/extension-components.yaml"
+	echo "---" >> $(RELEASE_DIR)/extension-components.yaml
+	cat cmd/extension/config/extensionconfig.yaml >> $(RELEASE_DIR)/extension-components.yaml
 
 	# Add metadata to the release artifacts
 	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml

@@ -1,0 +1,31 @@
+# ExtensionConfig registers the rke2-extension-server with CAPI's RuntimeSDK.
+#
+# Apply this resource to a management cluster to enable in-place updates for
+# RKE2 clusters managed by CAPRKE2.  Requires:
+#   - cert-manager installed on the management cluster
+#   - the extension server Deployment running (kubectl apply -k config/default/)
+#   - EXP_IN_PLACE_UPDATES=true on the controlplane
+#
+# The namespaceSelector below matches ALL namespaces by default.  Narrow it
+# to the namespaces that contain CAPI Cluster objects to limit the scope.
+apiVersion: runtime.cluster.x-k8s.io/v1beta2
+kind: ExtensionConfig
+metadata:
+  name: rke2-extension
+  annotations:
+    # Instructs the CAPI ExtensionConfig controller to read the CA from the
+    # cert-manager-issued Secret and inject it into spec.clientConfig.caBundle,
+    # so the runtime client can verify the extension server's TLS certificate.
+    runtime.cluster.x-k8s.io/inject-ca-from-secret: rke2-extension-system/rke2-extension-webhook-service-cert
+spec:
+  clientConfig:
+    service:
+      # Adjust namespace and name to match the kustomize output.
+      # With the default kustomization: namespace=rke2-extension-system,
+      # name=rke2-extension-webhook-service.
+      name: rke2-extension-webhook-service
+      namespace: rke2-extension-system
+      port: 443
+  namespaceSelector:
+    matchLabels:
+      rke2.io/in-place-updates: "enabled"
