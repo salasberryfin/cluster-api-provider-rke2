@@ -33,7 +33,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
 
 	controlplanev1 "github.com/rancher/cluster-api-provider-rke2/controlplane/api/v1beta2"
 
@@ -176,7 +175,7 @@ var _ = Describe("Provider upgrade", Label(UpgradeTestsLabel), func() {
 			By("Scaling down control plane to 2")
 			Eventually(func() error {
 				Expect(bootstrapClusterProxy.GetClient().Get(ctx, controlPlaneKey, controlPlane)).Should(Succeed())
-				controlPlane.Spec.Replicas = ptr.To(int32(2))
+				controlPlane.Spec.Replicas = new(int32(2))
 				return bootstrapClusterProxy.GetClient().Update(ctx, controlPlane)
 			}).WithPolling(10 * time.Second).WithTimeout(2 * time.Minute).Should(Succeed())
 
@@ -191,7 +190,7 @@ var _ = Describe("Provider upgrade", Label(UpgradeTestsLabel), func() {
 
 			Eventually(func() error {
 				Expect(bootstrapClusterProxy.GetClient().Get(ctx, machineDeploymentKey, machineDeployment)).Should(Succeed())
-				machineDeployment.Spec.Replicas = ptr.To(int32(2))
+				machineDeployment.Spec.Replicas = new(int32(2))
 				return bootstrapClusterProxy.GetClient().Update(ctx, machineDeployment)
 			}).WithPolling(10 * time.Second).WithTimeout(2 * time.Minute).Should(Succeed())
 
@@ -212,14 +211,14 @@ var _ = Describe("Provider upgrade", Label(UpgradeTestsLabel), func() {
 
 			Eventually(func() error {
 				Expect(bootstrapClusterProxy.GetClient().Get(ctx, controlPlaneKey, controlPlane)).Should(Succeed())
-				controlPlane.Spec.Replicas = ptr.To(int32(1))
+				controlPlane.Spec.Replicas = new(int32(1))
 				controlPlane.Spec.Version = versionUpgradeTo + "+rke2r1"
 				return bootstrapClusterProxy.GetClient().Update(ctx, controlPlane)
 			}).WithPolling(10 * time.Second).WithTimeout(2 * time.Minute).Should(Succeed())
 
 			Eventually(func() error {
 				Expect(bootstrapClusterProxy.GetClient().Get(ctx, machineDeploymentKey, machineDeployment)).Should(Succeed())
-				machineDeployment.Spec.Replicas = ptr.To(int32(1))
+				machineDeployment.Spec.Replicas = new(int32(1))
 				machineDeployment.Spec.Template.Spec.Version = versionUpgradeTo + "+rke2r1"
 				return bootstrapClusterProxy.GetClient().Update(ctx, machineDeployment)
 			}).WithPolling(10 * time.Second).WithTimeout(2 * time.Minute).Should(Succeed())

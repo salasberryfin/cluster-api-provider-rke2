@@ -29,7 +29,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -104,8 +103,8 @@ var _ = Describe("Bootstrap & Pivot", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: ptr.To(int64(3)),
-					WorkerMachineCount:       ptr.To(int64(1)),
+					ControlPlaneMachineCount: new(int64(3)),
+					WorkerMachineCount:       new(int64(1)),
 					ClusterctlVariables:      map[string]string{"LOCAL_IMAGES": e2eConfig.MustGetVariable(LocalImages)},
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
@@ -189,8 +188,8 @@ var _ = Describe("Bootstrap & Pivot", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: ptr.To(int64(1)),
-					WorkerMachineCount:       ptr.To(int64(3)),
+					ControlPlaneMachineCount: new(int64(1)),
+					WorkerMachineCount:       new(int64(3)),
 					ClusterctlVariables:      map[string]string{"LOCAL_IMAGES": e2eConfig.MustGetVariable(LocalImages)},
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
@@ -217,8 +216,8 @@ var _ = Describe("Bootstrap & Pivot", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersionUpgradeTo),
-					ControlPlaneMachineCount: ptr.To(int64(3)),
-					WorkerMachineCount:       ptr.To(int64(1)),
+					ControlPlaneMachineCount: new(int64(3)),
+					WorkerMachineCount:       new(int64(1)),
 					ClusterctlVariables:      map[string]string{"LOCAL_IMAGES": e2eConfig.MustGetVariable(LocalImages)},
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),

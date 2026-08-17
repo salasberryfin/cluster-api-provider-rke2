@@ -55,7 +55,11 @@ func mustRaw(obj runtime.Object) runtime.RawExtension {
 
 func baseMachine(version string) clusterv1.Machine {
 	return clusterv1.Machine{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "m1"},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "m1",
+			Labels:    map[string]string{clusterv1.ClusterNameLabel: "test"},
+		},
 		Spec: clusterv1.MachineSpec{
 			ClusterName: "test",
 			Version:     version,
@@ -65,7 +69,7 @@ func baseMachine(version string) clusterv1.Machine {
 
 func cpMachine(version string) clusterv1.Machine {
 	m := baseMachine(version)
-	m.Labels = map[string]string{clusterv1.MachineControlPlaneLabel: ""}
+	m.Labels[clusterv1.MachineControlPlaneLabel] = ""
 	return m
 }
 
@@ -123,6 +127,8 @@ func machinePlanSecret(data map[string][]byte) *corev1.Secret {
 				planv1alpha1.ClusterLifecycleGroupLabel: "cluster.x-k8s.io",
 				planv1alpha1.ClusterLifecycleKindLabel:  "Cluster",
 				planv1alpha1.ClusterLifecycleNameLabel:  "test",
+				planv1alpha1.MachineLifecycleGroupLabel: "cluster.x-k8s.io",
+				planv1alpha1.MachineLifecycleKindLabel:  "Machine",
 				planv1alpha1.MachineLifecycleNameLabel:  "m1",
 			},
 		},
@@ -206,7 +212,7 @@ var _ = Describe("DoCanUpdateMachine", func() {
 		Expect(string(resp.BootstrapConfigPatch.Patch)).To(ContainSubstring(`"content":"hello"`))
 	})
 
-	It("absorbs NodeLabels changes", func() {
+	It("does not absorb NodeLabels changes (replace-required)", func() {
 		h := newHandlers()
 		current := baseRKE2Config(nil)
 		desired := baseRKE2Config(func(s *bootstrapv1.RKE2ConfigSpec) {
@@ -217,10 +223,10 @@ var _ = Describe("DoCanUpdateMachine", func() {
 		h.DoCanUpdateMachine(context.Background(), req, resp)
 
 		Expect(resp.Status).To(Equal(runtimehooksv1.ResponseStatusSuccess))
-		Expect(string(resp.BootstrapConfigPatch.Patch)).To(ContainSubstring("env=prod"))
+		Expect(string(resp.BootstrapConfigPatch.Patch)).NotTo(ContainSubstring("env=prod"))
 	})
 
-	It("absorbs NodeTaints changes", func() {
+	It("does not absorb NodeTaints changes (replace-required)", func() {
 		h := newHandlers()
 		current := baseRKE2Config(nil)
 		desired := baseRKE2Config(func(s *bootstrapv1.RKE2ConfigSpec) {
@@ -231,10 +237,10 @@ var _ = Describe("DoCanUpdateMachine", func() {
 		h.DoCanUpdateMachine(context.Background(), req, resp)
 
 		Expect(resp.Status).To(Equal(runtimehooksv1.ResponseStatusSuccess))
-		Expect(string(resp.BootstrapConfigPatch.Patch)).To(ContainSubstring("dedicated=gpu:NoSchedule"))
+		Expect(string(resp.BootstrapConfigPatch.Patch)).NotTo(ContainSubstring("dedicated=gpu:NoSchedule"))
 	})
 
-	It("absorbs NodeNamePrefix changes", func() {
+	It("does not absorb NodeNamePrefix changes (replace-required)", func() {
 		h := newHandlers()
 		current := baseRKE2Config(nil)
 		desired := baseRKE2Config(func(s *bootstrapv1.RKE2ConfigSpec) {
@@ -245,10 +251,10 @@ var _ = Describe("DoCanUpdateMachine", func() {
 		h.DoCanUpdateMachine(context.Background(), req, resp)
 
 		Expect(resp.Status).To(Equal(runtimehooksv1.ResponseStatusSuccess))
-		Expect(string(resp.BootstrapConfigPatch.Patch)).To(ContainSubstring("worker-"))
+		Expect(string(resp.BootstrapConfigPatch.Patch)).NotTo(ContainSubstring("worker-"))
 	})
 
-	It("absorbs Kubelet config changes", func() {
+	It("does not absorb Kubelet config changes (replace-required)", func() {
 		h := newHandlers()
 		current := baseRKE2Config(nil)
 		desired := baseRKE2Config(func(s *bootstrapv1.RKE2ConfigSpec) {
@@ -261,10 +267,10 @@ var _ = Describe("DoCanUpdateMachine", func() {
 		h.DoCanUpdateMachine(context.Background(), req, resp)
 
 		Expect(resp.Status).To(Equal(runtimehooksv1.ResponseStatusSuccess))
-		Expect(string(resp.BootstrapConfigPatch.Patch)).To(ContainSubstring("--max-pods=200"))
+		Expect(string(resp.BootstrapConfigPatch.Patch)).NotTo(ContainSubstring("--max-pods=200"))
 	})
 
-	It("absorbs AdditionalUserData changes", func() {
+	It("does not absorb AdditionalUserData changes (replace-required)", func() {
 		h := newHandlers()
 		current := baseRKE2Config(nil)
 		desired := baseRKE2Config(func(s *bootstrapv1.RKE2ConfigSpec) {
@@ -277,7 +283,7 @@ var _ = Describe("DoCanUpdateMachine", func() {
 		h.DoCanUpdateMachine(context.Background(), req, resp)
 
 		Expect(resp.Status).To(Equal(runtimehooksv1.ResponseStatusSuccess))
-		Expect(string(resp.BootstrapConfigPatch.Patch)).To(ContainSubstring("ops"))
+		Expect(string(resp.BootstrapConfigPatch.Patch)).NotTo(ContainSubstring("ops"))
 	})
 
 	It("does not absorb PreRKE2Commands changes (replace-required)", func() {
@@ -390,7 +396,7 @@ var _ = Describe("DoCanUpdateMachineSet", func() {
 		Expect(string(resp.BootstrapConfigTemplatePatch.Patch)).NotTo(ContainSubstring("preRKE2Commands"))
 	})
 
-	It("absorbs NodeLabels changes at the template level", func() {
+	It("does not absorb NodeLabels changes at the template level (replace-required)", func() {
 		h := newHandlers()
 		currentBCT := baseRKE2ConfigTemplate(nil)
 		desiredBCT := baseRKE2ConfigTemplate(func(s *bootstrapv1.RKE2ConfigSpec) {
@@ -401,7 +407,7 @@ var _ = Describe("DoCanUpdateMachineSet", func() {
 		h.DoCanUpdateMachineSet(context.Background(), req, resp)
 
 		Expect(resp.Status).To(Equal(runtimehooksv1.ResponseStatusSuccess))
-		Expect(string(resp.BootstrapConfigTemplatePatch.Patch)).To(ContainSubstring("tier=workers"))
+		Expect(string(resp.BootstrapConfigTemplatePatch.Patch)).NotTo(ContainSubstring("tier=workers"))
 	})
 
 	It("returns empty patches when there is no diff", func() {
@@ -422,8 +428,9 @@ var _ = Describe("DoCanUpdateMachineSet", func() {
 
 var _ = Describe("DoUpdateMachine", func() {
 	It("returns retry when the machine-plan Secret is not yet registered", func() {
-		h := newHandlers() // no Secrets pre-populated
-		req := updateMachineReq(baseMachine("v1.33.1"), baseRKE2Config(nil))
+		machine := baseMachine("v1.33.1")
+		h := newHandlers(&machine) // no Secrets pre-populated
+		req := updateMachineReq(machine, baseRKE2Config(nil))
 		resp := &runtimehooksv1.UpdateMachineResponse{}
 		h.DoUpdateMachine(context.Background(), req, resp)
 
@@ -432,9 +439,10 @@ var _ = Describe("DoUpdateMachine", func() {
 	})
 
 	It("writes the upgrade plan to the Secret on the first call", func() {
+		machine := baseMachine("v1.33.1")
 		secret := machinePlanSecret(nil)
-		h := newHandlers(secret)
-		req := updateMachineReq(baseMachine("v1.33.1"), baseRKE2Config(nil))
+		h := newHandlers(secret, &machine)
+		req := updateMachineReq(machine, baseRKE2Config(nil))
 		resp := &runtimehooksv1.UpdateMachineResponse{}
 		h.DoUpdateMachine(context.Background(), req, resp)
 
@@ -455,7 +463,7 @@ var _ = Describe("DoUpdateMachine", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		secret := machinePlanSecret(map[string][]byte{"plan": planJSON})
-		h := newHandlers(secret)
+		h := newHandlers(secret, &machine)
 
 		req := updateMachineReq(machine, cfg)
 		resp := &runtimehooksv1.UpdateMachineResponse{}
@@ -472,10 +480,10 @@ var _ = Describe("DoUpdateMachine", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		secret := machinePlanSecret(map[string][]byte{
-			"plan":             planJSON,
+			"plan":            planJSON,
 			plan.PlanStateKey: []byte(plan.PlanStateSucceeded),
 		})
-		h := newHandlers(secret)
+		h := newHandlers(secret, &machine)
 
 		req := updateMachineReq(machine, cfg)
 		resp := &runtimehooksv1.UpdateMachineResponse{}
@@ -495,7 +503,7 @@ var _ = Describe("DoUpdateMachine", func() {
 			"plan":        planJSON,
 			"appliedPlan": planJSON,
 		})
-		h := newHandlers(secret)
+		h := newHandlers(secret, &machine)
 
 		req := updateMachineReq(machine, cfg)
 		resp := &runtimehooksv1.UpdateMachineResponse{}
@@ -512,10 +520,10 @@ var _ = Describe("DoUpdateMachine", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		secret := machinePlanSecret(map[string][]byte{
-			"plan":             planJSON,
+			"plan":            planJSON,
 			plan.PlanStateKey: []byte(plan.PlanStateFailed),
 		})
-		h := newHandlers(secret)
+		h := newHandlers(secret, &machine)
 
 		req := updateMachineReq(machine, cfg)
 		resp := &runtimehooksv1.UpdateMachineResponse{}
@@ -535,7 +543,7 @@ var _ = Describe("DoUpdateMachine", func() {
 			"failed-checksum": []byte(plan.PlanHash(planJSON)),
 			"failure-count":   []byte("1"),
 		})
-		h := newHandlers(secret)
+		h := newHandlers(secret, &machine)
 
 		req := updateMachineReq(machine, cfg)
 		resp := &runtimehooksv1.UpdateMachineResponse{}
@@ -551,7 +559,7 @@ var _ = Describe("DoUpdateMachine", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		secret := machinePlanSecret(map[string][]byte{"plan": planJSON})
-		h := newHandlers(secret)
+		h := newHandlers(secret, &machine)
 
 		req := updateMachineReq(machine, cfg)
 		h.DoUpdateMachine(context.Background(), req, &runtimehooksv1.UpdateMachineResponse{})

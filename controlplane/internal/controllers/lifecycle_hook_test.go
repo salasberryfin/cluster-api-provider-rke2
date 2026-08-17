@@ -26,7 +26,6 @@ import (
 	"github.com/rancher/cluster-api-provider-rke2/pkg/rke2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/controllers/clustercache"
 	"sigs.k8s.io/cluster-api/controllers/remote"
@@ -82,7 +81,7 @@ var _ = Describe("Lifecycle Hooks", Ordered, func() {
 
 		// Set InfrastructureReady to true so ClusterCache creates the clusterAccessor.
 		patch := client.MergeFrom(cluster.DeepCopy())
-		cluster.Status.Initialization.InfrastructureProvisioned = ptr.To(true)
+		cluster.Status.Initialization.InfrastructureProvisioned = new(true)
 		Expect(testEnv.Status().Patch(ctx, cluster, patch)).To(Succeed())
 
 		node = &corev1.Node{
@@ -129,7 +128,7 @@ var _ = Describe("Lifecycle Hooks", Ordered, func() {
 			Spec: clusterv1.MachineSpec{
 				ClusterName: cluster.Name,
 				Bootstrap: clusterv1.Bootstrap{
-					DataSecretName: ptr.To("dummy-secret"),
+					DataSecretName: new("dummy-secret"),
 				},
 				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 					Kind:     "FakeMachine",
@@ -150,7 +149,7 @@ var _ = Describe("Lifecycle Hooks", Ordered, func() {
 			Spec: clusterv1.MachineSpec{
 				ClusterName: cluster.Name,
 				Bootstrap: clusterv1.Bootstrap{
-					DataSecretName: ptr.To("dummy-secret"),
+					DataSecretName: new("dummy-secret"),
 				},
 				InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 					Kind:     "FakeMachine",
@@ -197,7 +196,7 @@ var _ = Describe("Lifecycle Hooks", Ordered, func() {
 					},
 				},
 			},
-		}, controller.Options{MaxConcurrentReconciles: 10, SkipNameValidation: ptr.To(true)})
+		}, controller.Options{MaxConcurrentReconciles: 10, SkipNameValidation: new(true)})
 		Expect(err).ToNot(HaveOccurred())
 
 		// Ensure the ClusterCache reconciled at least once (and if possible created a clusterAccessor).
@@ -211,7 +210,7 @@ var _ = Describe("Lifecycle Hooks", Ordered, func() {
 		rcp = &controlplanev1.RKE2ControlPlane{
 			Status: controlplanev1.RKE2ControlPlaneStatus{
 				Initialization: controlplanev1.RKE2ControlPlaneInitializationStatus{
-					ControlPlaneInitialized: ptr.To(true),
+					ControlPlaneInitialized: new(true),
 				},
 			},
 		}

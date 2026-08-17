@@ -25,7 +25,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 )
 
@@ -57,8 +56,8 @@ var _ = Describe("When testing RCP remediation", Label(DefaultTestsLabel), func(
 			BootstrapClusterProxy:  bootstrapClusterProxy,
 			ArtifactFolder:         artifactFolder,
 			SkipCleanup:            skipCleanup,
-			InfrastructureProvider: ptr.To("docker:v1.13.4"),
-			Flavor:                 ptr.To("kcp-remediation"),
+			InfrastructureProvider: new("docker:v1.13.4"),
+			Flavor:                 new("kcp-remediation"),
 		}
 	})
 })

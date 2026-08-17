@@ -29,7 +29,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 
 	controlplanev1 "github.com/rancher/cluster-api-provider-rke2/controlplane/api/v1beta2"
 	"github.com/rancher/cluster-api-provider-rke2/pkg/rke2"
@@ -108,8 +107,8 @@ var _ = Describe("In-place propagation", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: ptr.To(int64(3)),
-					WorkerMachineCount:       ptr.To(int64(0)),
+					ControlPlaneMachineCount: new(int64(3)),
+					WorkerMachineCount:       new(int64(0)),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -162,9 +161,9 @@ var _ = Describe("In-place propagation", Label(DefaultTestsLabel), func() {
 			rke2ControlPlane.Spec.MachineTemplate.ObjectMeta.Annotations["test-annotation"] = "test-annotation-value"
 
 			// Set new timeouts for NodeDrainTimeoutSeconds, NodeDeletionTimeoutSeconds and NodeVolumeDetachTimeoutSeconds.
-			rke2ControlPlane.Spec.MachineTemplate.Spec.Deletion.NodeDrainTimeoutSeconds = ptr.To(int32(timeout240s))
-			rke2ControlPlane.Spec.MachineTemplate.Spec.Deletion.NodeDeletionTimeoutSeconds = ptr.To(int32(timeout240s))
-			rke2ControlPlane.Spec.MachineTemplate.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = ptr.To(int32(timeout480s))
+			rke2ControlPlane.Spec.MachineTemplate.Spec.Deletion.NodeDrainTimeoutSeconds = new(int32(timeout240s))
+			rke2ControlPlane.Spec.MachineTemplate.Spec.Deletion.NodeDeletionTimeoutSeconds = new(int32(timeout240s))
+			rke2ControlPlane.Spec.MachineTemplate.Spec.Deletion.NodeVolumeDetachTimeoutSeconds = new(int32(timeout480s))
 
 			// Patch the RKE2 control plane
 			By("Patching RKE2 control plane with new labels, annotations, and timeouts")

@@ -31,7 +31,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
@@ -105,8 +104,8 @@ var _ = Describe("Workload cluster creation", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: ptr.To(int64(1)),
-					WorkerMachineCount:       ptr.To(int64(1)),
+					ControlPlaneMachineCount: new(int64(1)),
+					WorkerMachineCount:       new(int64(1)),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -126,8 +125,8 @@ var _ = Describe("Workload cluster creation", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: ptr.To(int64(1)),
-					WorkerMachineCount:       ptr.To(int64(3)),
+					ControlPlaneMachineCount: new(int64(1)),
+					WorkerMachineCount:       new(int64(3)),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -146,8 +145,8 @@ var _ = Describe("Workload cluster creation", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersionUpgradeTo),
-					ControlPlaneMachineCount: ptr.To(int64(1)),
-					WorkerMachineCount:       ptr.To(int64(3)),
+					ControlPlaneMachineCount: new(int64(1)),
+					WorkerMachineCount:       new(int64(3)),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -179,8 +178,8 @@ var _ = Describe("Workload cluster creation", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersionUpgradeTo),
-					ControlPlaneMachineCount: ptr.To(int64(3)),
-					WorkerMachineCount:       ptr.To(int64(3)),
+					ControlPlaneMachineCount: new(int64(3)),
+					WorkerMachineCount:       new(int64(3)),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -205,8 +204,8 @@ var _ = Describe("Workload cluster creation", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersionUpgradeTo),
-					ControlPlaneMachineCount: ptr.To(int64(1)),
-					WorkerMachineCount:       ptr.To(int64(3)),
+					ControlPlaneMachineCount: new(int64(1)),
+					WorkerMachineCount:       new(int64(3)),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
@@ -231,8 +230,8 @@ var _ = Describe("Workload cluster creation", Label(DefaultTestsLabel), func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersionUpgradeTo),
-					ControlPlaneMachineCount: ptr.To(int64(1)),
-					WorkerMachineCount:       ptr.To(int64(1)),
+					ControlPlaneMachineCount: new(int64(1)),
+					WorkerMachineCount:       new(int64(1)),
 				},
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),

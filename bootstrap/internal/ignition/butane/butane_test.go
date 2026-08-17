@@ -22,7 +22,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 
 	ignition "github.com/coreos/ignition/v2/config/v3_3"
 
@@ -118,15 +117,15 @@ var _ = Describe("Render", func() {
 
 		Expect(ign.Systemd.Units).To(HaveLen(3))
 		Expect(ign.Systemd.Units[0].Name).To(Equal("rke2-install.service"))
-		Expect(ign.Systemd.Units[0].Contents).To(Equal(ptr.To("[Unit]\nDescription=rke2-install\nWants=network-online.target dbus.service\nAfter=network-online.target network.target dbus.service\nConditionPathExists=!/etc/cluster-api/bootstrap-success.complete\n[Service]\nUser=root\n# To not restart the unit when it exits, as it is expected.\nType=oneshot\nExecStart=/etc/rke2-install.sh\n[Install]\nWantedBy=multi-user.target\n")))
-		Expect(ign.Systemd.Units[0].Enabled).To(Equal(ptr.To(true)))
+		Expect(ign.Systemd.Units[0].Contents).To(Equal(new("[Unit]\nDescription=rke2-install\nWants=network-online.target dbus.service\nAfter=network-online.target network.target dbus.service\nConditionPathExists=!/etc/cluster-api/bootstrap-success.complete\n[Service]\nUser=root\n# To not restart the unit when it exits, as it is expected.\nType=oneshot\nExecStart=/etc/rke2-install.sh\n[Install]\nWantedBy=multi-user.target\n")))
+		Expect(ign.Systemd.Units[0].Enabled).To(Equal(new(true)))
 
 		Expect(ign.Systemd.Units[1].Name).To(Equal("chronyd.service"))
-		Expect(ign.Systemd.Units[1].Enabled).To(Equal(ptr.To(true)))
+		Expect(ign.Systemd.Units[1].Enabled).To(Equal(new(true)))
 
 		Expect(ign.Systemd.Units[2].Name).To(Equal("test.service"))
-		Expect(ign.Systemd.Units[2].Contents).To(Equal(ptr.To("[Unit]\nDescription=test\n[Service]\nExecStart=/etc/test.sh\n[Install]\nWantedBy=test.target\n")))
-		Expect(ign.Systemd.Units[2].Enabled).To(Equal(ptr.To(true)))
+		Expect(ign.Systemd.Units[2].Contents).To(Equal(new("[Unit]\nDescription=test\n[Service]\nExecStart=/etc/test.sh\n[Install]\nWantedBy=test.target\n")))
+		Expect(ign.Systemd.Units[2].Enabled).To(Equal(new(true)))
 	})
 
 	It("accepts empty additional config", func() {

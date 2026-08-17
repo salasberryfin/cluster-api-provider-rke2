@@ -22,7 +22,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
@@ -57,10 +56,10 @@ var _ = Describe("RKE2ControlPlane webhook", func() {
 		rcp.Spec.Replicas = nil
 		_, err := validator.ValidateCreate(context.TODO(), rcp)
 		Expect(err).Should(HaveOccurred())
-		rcp.Spec.Replicas = ptr.To(int32(0))
+		rcp.Spec.Replicas = new(int32(0))
 		_, err = validator.ValidateCreate(context.TODO(), rcp)
 		Expect(err).Should(HaveOccurred())
-		rcp.Spec.Replicas = ptr.To(int32(1))
+		rcp.Spec.Replicas = new(int32(1))
 		_, err = validator.ValidateCreate(context.TODO(), rcp)
 		Expect(err).ShouldNot(HaveOccurred())
 	})
@@ -68,10 +67,10 @@ var _ = Describe("RKE2ControlPlane webhook", func() {
 		rcp.Spec.Replicas = nil
 		_, err := validator.ValidateUpdate(context.TODO(), oldRcp, rcp)
 		Expect(err).Should(HaveOccurred())
-		rcp.Spec.Replicas = ptr.To(int32(0))
+		rcp.Spec.Replicas = new(int32(0))
 		_, err = validator.ValidateUpdate(context.TODO(), oldRcp, rcp)
 		Expect(err).Should(HaveOccurred())
-		rcp.Spec.Replicas = ptr.To(int32(1))
+		rcp.Spec.Replicas = new(int32(1))
 		_, err = validator.ValidateUpdate(context.TODO(), oldRcp, rcp)
 		Expect(err).ShouldNot(HaveOccurred())
 	})

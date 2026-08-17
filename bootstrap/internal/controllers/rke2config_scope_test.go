@@ -25,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -94,7 +93,7 @@ var _ = Describe("RKE2Config Scope", func() {
 				Kind:       "MachinePool",
 				Name:       machinePool.Name,
 				UID:        types.UID("foo"),
-				Controller: ptr.To(true),
+				Controller: new(true),
 			},
 		}
 		Expect(fakeClient.Update(ctx, config)).Should(Succeed())
@@ -124,7 +123,7 @@ var _ = Describe("RKE2Config Scope", func() {
 				Kind:       "Machine",
 				Name:       machine.Name,
 				UID:        types.UID("foo"),
-				Controller: ptr.To(true),
+				Controller: new(true),
 			},
 		}
 		Expect(fakeClient.Update(ctx, config)).Should(Succeed())
@@ -151,7 +150,7 @@ var _ = Describe("RKE2Config Scope", func() {
 				Kind:       "RKE2ControlPlane",
 				Name:       controlPlane.Name,
 				UID:        types.UID("foo"),
-				Controller: ptr.To(true),
+				Controller: new(true),
 			},
 		}
 		Expect(fakeClient.Update(ctx, machine)).Should(Succeed())
