@@ -109,6 +109,8 @@ func ComputeDesiredMachine(
 		machineUID = existingMachine.UID
 		version = existingMachine.Spec.Version
 
+		// Only carry the annotation forward when it already exists on the Machine: adding it to
+		// older machines that predate it would silently trigger serverConfig rollouts on them.
 		if serverConfig, ok := existingMachine.Annotations[controlplanev1.RKE2ServerConfigurationAnnotation]; ok {
 			annotations[controlplanev1.RKE2ServerConfigurationAnnotation] = serverConfig
 		}
