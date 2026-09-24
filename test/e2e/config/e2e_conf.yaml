@@ -7,6 +7,8 @@ images:
     loadBehavior: mustLoad
   - name: ghcr.io/rancher/cluster-api-provider-rke2-test-extension:dev
     loadBehavior: mustLoad
+  - name: ghcr.io/rancher/cluster-api-provider-rke2-extension:dev
+    loadBehavior: mustLoad
   - name: quay.io/jetstack/cert-manager-cainjector:v1.16.3
     loadBehavior: tryLoad
   - name: quay.io/jetstack/cert-manager-webhook:v1.16.3
@@ -132,6 +134,20 @@ providers:
     versions:
       - name: v0.25.99
         value: ../../extension/config/default
+        contract: v1beta2
+        files:
+          - sourcePath: "../../../metadata.yaml"
+            targetName: "metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--leader-elect"
+            new: "--leader-elect=false"
+  - name: rke2-in-place-updates-extension
+    type: RuntimeExtensionProvider
+    versions:
+      - name: v0.25.99
+        value: ../../../config/extension/default
         contract: v1beta2
         files:
           - sourcePath: "../../../metadata.yaml"

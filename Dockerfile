@@ -27,8 +27,7 @@ ARG TARGETOS TARGETARCH
 # Do not force rebuild of up-to-date packages (do not use -a) and use the compiler cache folder
 RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -trimpath -ldflags "${ldflags} -extldflags '-static'" \
-    -o manager ${package}
+    go build -trimpath -ldflags "${ldflags} -extldflags '-static'" -o manager ${package}
 
 # Production image
 FROM gcr.io/distroless/static:nonroot
