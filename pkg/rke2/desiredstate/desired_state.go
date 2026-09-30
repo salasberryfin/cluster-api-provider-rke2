@@ -109,8 +109,16 @@ func ComputeDesiredMachine(
 		machineUID = existingMachine.UID
 		version = existingMachine.Spec.Version
 
-		if serverConfig, ok := existingMachine.Annotations[controlplanev1.RKE2ServerConfigurationAnnotation]; ok {
-			annotations[controlplanev1.RKE2ServerConfigurationAnnotation] = serverConfig
+		// Set the annotation on the current desired serverConfig so matchServerConfig sees
+		// the machine as up-to-date after an in-place update. Only set when already present
+		// to avoid adding the annotation to older machines that never had it.
+		if _, ok := existingMachine.Annotations[controlplanev1.RKE2ServerConfigurationAnnotation]; ok {
+			serverConfig, err := json.Marshal(rcp.Spec.ServerConfig)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal server configuration: %w", err)
+			}
+
+			annotations[controlplanev1.RKE2ServerConfigurationAnnotation] = string(serverConfig)
 		}
 	}
 
