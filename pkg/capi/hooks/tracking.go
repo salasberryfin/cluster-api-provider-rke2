@@ -111,52 +111,6 @@ func IsPending(hook runtimecatalog.Hook, obj client.Object) bool {
 	return isInCommaSeparatedList(annotations[runtimev1.PendingHooksAnnotation], hookName)
 }
 
-// MarkAsDone removes the intent to call a Hook from the object's PendingHooksAnnotation.
-// Usually this func is called after all the registered extensions for the Hook returned an answer
-// without requests to hold on to the object's lifecycle (retryAfterSeconds).
-func MarkAsDone(ctx context.Context, c client.Client, obj client.Object, updateResourceVersionOnObject bool, hook runtimecatalog.Hook) error {
-	if !IsPending(hook, obj) {
-		return nil
-	}
-
-	hookName := runtimecatalog.HookName(hook)
-
-	orig, ok := obj.DeepCopyObject().(client.Object)
-	if !ok {
-		return errors.New("failed to mark hook as done: deep copy is not a client.Object")
-	}
-
-	// Read the annotation of the objects and add the hook to the comma separated list
-	annotations := obj.GetAnnotations()
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-
-	annotations[runtimev1.PendingHooksAnnotation] = removeFromCommaSeparatedList(annotations[runtimev1.PendingHooksAnnotation], hookName)
-	if annotations[runtimev1.PendingHooksAnnotation] == "" {
-		delete(annotations, runtimev1.PendingHooksAnnotation)
-	}
-
-	obj.SetAnnotations(annotations)
-
-	// In some cases it is preferred to not update resourceVersion in the input object,
-	// because this could lead to conflict errors e.g. when patching at the end of a reconcile loop.
-	if !updateResourceVersionOnObject {
-		objCopy, ok := obj.DeepCopyObject().(client.Object)
-		if !ok {
-			return errors.New("failed to mark hook as done: deep copy is not a client.Object")
-		}
-
-		obj = objCopy
-	}
-
-	if err := c.Patch(ctx, obj, client.MergeFrom(orig)); err != nil {
-		return errors.Wrapf(err, "failed to mark %q hook as done", hookName)
-	}
-
-	return nil
-}
-
 func addToCommaSeparatedList(list string, items ...string) string {
 	set := sets.Set[string]{}.Insert(strings.Split(list, ",")...)
 
@@ -173,16 +127,4 @@ func isInCommaSeparatedList(list, item string) bool {
 	set := sets.Set[string]{}.Insert(strings.Split(list, ",")...)
 
 	return set.Has(item)
-}
-
-func removeFromCommaSeparatedList(list string, items ...string) string {
-	set := sets.Set[string]{}.Insert(strings.Split(list, ",")...)
-
-	// Remove empty strings (that might have been introduced by splitting an empty list)
-	// from the hook list
-	set.Delete("")
-
-	set.Delete(items...)
-
-	return strings.Join(sets.List(set), ",")
 }

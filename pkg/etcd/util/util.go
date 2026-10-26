@@ -20,8 +20,6 @@ package util
 import (
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	"github.com/rancher/cluster-api-provider-rke2/pkg/etcd"
 )
 
@@ -46,25 +44,4 @@ func MemberForName(members []*etcd.Member, name string) *etcd.Member {
 	}
 
 	return nil
-}
-
-// MemberNames returns a list of all the etcd member names.
-func MemberNames(members []*etcd.Member) []string {
-	names := make([]string, 0, len(members))
-	for _, m := range members {
-		names = append(names, m.Name)
-	}
-
-	return names
-}
-
-// MemberEqual returns true if the lists of members match.
-//
-// This function only checks that set of names of each member
-// within the lists is the same.
-func MemberEqual(members1, members2 []*etcd.Member) bool {
-	names1 := sets.Set[string]{}.Insert(MemberNames(members1)...)
-	names2 := sets.Set[string]{}.Insert(MemberNames(members2)...)
-
-	return names1.Equal(names2)
 }

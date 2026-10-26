@@ -23,7 +23,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -63,22 +62,6 @@ func WaitForCacheToBeUpToDate[T client.Object](ctx context.Context, c client.Cli
 	return waitFor(ctx, c, action, checkIfObjectUpToDate, objs...)
 }
 
-// WaitForObjectsToBeAddedToTheCache waits until the cache is up-to-date in the sense of that the
-// passed in objects exist in the cache.
-// Note: This func will update the passed in objects while polling.
-// Note: The generic parameter enforces that all objects have the same type.
-func WaitForObjectsToBeAddedToTheCache[T client.Object](ctx context.Context, c client.Client, action string, objs ...T) error {
-	return waitFor(ctx, c, action, checkIfObjectAdded, objs...)
-}
-
-// WaitForObjectsToBeDeletedFromTheCache waits until the cache is up-to-date in the sense of that the
-// passed in objects have been either removed from the cache or they have a deletionTimestamp set.
-// Note: This func will update the passed in objects while polling.
-// Note: The generic parameter enforces that all objects have the same type.
-func WaitForObjectsToBeDeletedFromTheCache[T client.Object](ctx context.Context, c client.Client, action string, objs ...T) error {
-	return waitFor(ctx, c, action, checkIfObjectDeleted, objs...)
-}
-
 // checkIfObjectUpToDate checks if an object is up-to-date and returns an error if it is not.
 func checkIfObjectUpToDate(ctx context.Context, c client.Client, desiredObj desiredObject) (isErrorRetryable bool, err error) {
 	if desiredObj.MinimumResourceVersion == "" {
@@ -111,39 +94,6 @@ func checkIfObjectUpToDate(ctx context.Context, c client.Client, desiredObj desi
 
 	// Done, resourceVersion is new enough.
 	return false, nil
-}
-
-func checkIfObjectAdded(ctx context.Context, c client.Client, desiredObj desiredObject) (isErrorRetryable bool, err error) {
-	if err := c.Get(ctx, desiredObj.Key, desiredObj.Object); err != nil {
-		if apierrors.IsNotFound(err) {
-			// Object is not yet in the cache (retryable).
-			return true, err
-		}
-		// Unexpected error occurred (not retryable).
-		return false, err
-	}
-
-	// Done, object exists in the cache.
-	return false, nil
-}
-
-func checkIfObjectDeleted(ctx context.Context, c client.Client, desiredObj desiredObject) (isErrorRetryable bool, err error) {
-	if err := c.Get(ctx, desiredObj.Key, desiredObj.Object); err != nil {
-		if apierrors.IsNotFound(err) {
-			// Done, object has been removed from the cache.
-			return false, nil
-		}
-		// Unexpected error occurred (not retryable).
-		return false, err
-	}
-
-	if !desiredObj.Object.GetDeletionTimestamp().IsZero() {
-		// Done, object has deletionTimestamp set.
-		return false, nil
-	}
-
-	// Object does not have deletionTimestamp set yet (retryable).
-	return true, fmt.Errorf("%s still exists", klog.KObj(desiredObj.Object))
 }
 
 type desiredObject struct {
