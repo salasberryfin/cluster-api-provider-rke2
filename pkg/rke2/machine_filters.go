@@ -14,7 +14,6 @@ import (
 
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta2"
 	controlplanev1 "github.com/rancher/cluster-api-provider-rke2/controlplane/api/v1beta2"
-	bsutil "github.com/rancher/cluster-api-provider-rke2/pkg/util"
 )
 
 // matchesRKE2BootstrapConfig checks if machine's RKE2ConfigSpec is equivalent with RCP's RKE2ConfigSpec.
@@ -192,52 +191,5 @@ func matchesTemplateClonedFrom(ctx context.Context,
 		}
 
 		return true
-	}
-}
-
-// matchesKubernetesVersion returns a filter to find all machines that match a given Kubernetes or RKE2 version.
-func matchesKubernetesOrRKE2Version(ctx context.Context, rke2Version string) func(*clusterv1.Machine) bool {
-	return func(machine *clusterv1.Machine) bool {
-		logger := log.FromContext(ctx)
-		if machine == nil {
-			logger.V(5).Info("Can not validate k8s version on missing Machine. Needs rollout.")
-
-			return false
-		}
-
-		logger = logger.WithValues("Machine", machine.Name)
-
-		if machine.Spec.Version == "" {
-			logger.V(5).Info("Machine is missing k8s version. Needs rollout.")
-
-			return false
-		}
-
-		if bsutil.IsRKE2Version(machine.Spec.Version) {
-			match := bsutil.CompareVersions(machine.Spec.Version, rke2Version)
-			if !match {
-				logger.V(5).Info(fmt.Sprintf("Machine RKE2 version '%s' does not match desired version '%s'. Needs rollout.",
-					machine.Spec.Version,
-					rke2Version),
-				)
-			}
-
-			return match
-		}
-
-		rcpKubeVersion, err := bsutil.Rke2ToKubeVersion(rke2Version)
-		if err != nil {
-			return true
-		}
-
-		match := bsutil.CompareVersions(machine.Spec.Version, rcpKubeVersion)
-		if !match {
-			logger.V(5).Info(fmt.Sprintf("Machine k8s version '%s' does not match desired version '%s'. Needs rollout.",
-				machine.Spec.Version,
-				rcpKubeVersion),
-			)
-		}
-
-		return match
 	}
 }

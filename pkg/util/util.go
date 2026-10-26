@@ -29,8 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-
 	bootstrapv1 "github.com/rancher/cluster-api-provider-rke2/bootstrap/api/v1beta2"
 	controlplanev1 "github.com/rancher/cluster-api-provider-rke2/controlplane/api/v1beta2"
 )
@@ -84,18 +82,6 @@ func GetControlPlaneByName(ctx context.Context, c client.Client, namespace, name
 	return m, nil
 }
 
-// GetClusterByName finds and return a Cluster object using the specified params.
-func GetClusterByName(ctx context.Context, c client.Client, namespace, name string) (*clusterv1.Cluster, error) {
-	m := &clusterv1.Cluster{}
-
-	key := client.ObjectKey{Name: name, Namespace: namespace}
-	if err := c.Get(ctx, key, m); err != nil {
-		return nil, err
-	}
-
-	return m, nil
-}
-
 // Random generates a random string with length size.
 func Random(size int) (string, error) {
 	token := make([]byte, size)
@@ -127,45 +113,6 @@ func Rke2ToKubeVersion(rk2Version string) (kubeVersion string, err error) {
 	kubeVersion = string(regex.ReplaceAll([]byte(rk2Version), []byte("$1")))
 
 	return kubeVersion, nil
-}
-
-// IsRKE2Version checks if a string is an RKE2 version.
-func IsRKE2Version(rke2Version string) bool {
-	regexStr := "v(\\d\\.\\d{2}\\.\\d)\\+rke2r\\d"
-
-	regex, _ := regexp.Compile(regexStr)
-
-	return regex.MatchString(rke2Version)
-}
-
-// AppendIfNotPresent appends a string to a slice only if the value does not already exist.
-func AppendIfNotPresent(origSlice []string, strItem string) (resultSlice []string) {
-	present := false
-
-	for _, item := range origSlice {
-		if item == strItem {
-			present = true
-		}
-	}
-
-	if !present {
-		return append(origSlice, strItem)
-	}
-
-	return origSlice
-}
-
-// CompareVersions compares two string version supposing those would begin with 'v' or not.
-func CompareVersions(v1 string, v2 string) bool {
-	if string(v1[0]) != "v" {
-		v1 = "v" + v1
-	}
-
-	if string(v2[0]) != "v" {
-		v2 = "v" + v2
-	}
-
-	return v1 == v2
 }
 
 // GetMapKeysAsString returns a comma separated string of keys from a map.

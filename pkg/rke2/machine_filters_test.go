@@ -159,22 +159,6 @@ var _ = Describe("matchAgentConfig", func() {
 	)
 })
 
-var _ = Describe("matching Kubernetes Version", func() {
-	It("should match version", func() {
-		machineCollection := collections.FromMachines(&machine)
-		matches := machineCollection.AnyFilter(matchesKubernetesOrRKE2Version(context.TODO(), rcp.GetDesiredVersion()))
-		Expect(len(matches)).To(Equal(1))
-	})
-
-	It("should match when RKE2 version is set on the machine", func() {
-		machine.Spec.Version = rke2MachineVersion
-		machineCollection := collections.FromMachines(&machine)
-		matches := machineCollection.AnyFilter(matchesKubernetesOrRKE2Version(context.TODO(), rcp.GetDesiredVersion()))
-		Expect(len(matches)).To(Equal(1))
-		machine.Spec.Version = k8sMachineVersion
-	})
-})
-
 func TestMachineTaintsRollout(t *testing.T) {
 	taint := clusterv1.MachineTaint{
 		Key:         "workload.example.com/dedicated",

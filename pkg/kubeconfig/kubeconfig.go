@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/certs"
 
 	"github.com/rancher/cluster-api-provider-rke2/pkg/secret"
@@ -142,18 +141,6 @@ func New(
 	}, nil
 }
 
-// CreateSecret creates the Kubeconfig secret for the given cluster.
-func CreateSecret(ctx context.Context, c client.Client, cluster *clusterv1.Cluster) error {
-	name := util.ObjectKey(cluster)
-
-	return CreateSecretWithOwner(ctx, c, name, cluster.Spec.ControlPlaneEndpoint.String(), metav1.OwnerReference{
-		APIVersion: clusterv1.GroupVersion.String(),
-		Kind:       "Cluster",
-		Name:       cluster.Name,
-		UID:        cluster.UID,
-	})
-}
-
 // CreateSecretWithOwner creates the Kubeconfig secret for the given cluster name, namespace, endpoint, and owner reference.
 func CreateSecretWithOwner(ctx context.Context, c client.Client, clusterName client.ObjectKey, endpoint string, owner metav1.OwnerReference) error {
 	server := "https://" + endpoint
@@ -182,18 +169,6 @@ func UpdateSecret(ctx context.Context, c client.Client, clusterName client.Objec
 	configSecret.Data[secret.KubeconfigDataName] = out
 
 	return c.Update(ctx, configSecret)
-}
-
-// GenerateSecret returns a Kubernetes secret for the given Cluster and kubeconfig data.
-func GenerateSecret(cluster *clusterv1.Cluster, data []byte) *corev1.Secret {
-	name := util.ObjectKey(cluster)
-
-	return GenerateSecretWithOwner(name, data, metav1.OwnerReference{
-		APIVersion: clusterv1.GroupVersion.String(),
-		Kind:       "Cluster",
-		Name:       cluster.Name,
-		UID:        cluster.UID,
-	})
 }
 
 // GenerateSecretWithOwner returns a Kubernetes secret for the given Cluster name, namespace, kubeconfig data, and ownerReference.
